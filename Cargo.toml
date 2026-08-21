@@ -1,0 +1,10 @@
+[package]
+name = "mitos-installer"
+version = "0.1.0"
+edition = "2021"
+authors = ["Shark <babor3331@gmail.com>"]
+description = "The system installer for MITOS"
+
+[dependencies]
+# dialoguer provides easy-to-use terminal prompts
+dialoguer = "0.11"
