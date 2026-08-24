@@ -1,6 +1,8 @@
 use std::fs;
 use std::path::Path;
 use std::process::Command;
+use crate::utils::run_chroot_command;
+
 
 /// Configures default networking using systemd-networkd
 pub fn configure_network(target_mount: &Path) -> Result<(), String> {
@@ -24,9 +26,10 @@ pub fn configure_network(target_mount: &Path) -> Result<(), String> {
 
     // Enable systemd-networkd and systemd-resolved via chroot
     run_chroot_command(
-        target_mount, 
-        "systemctl enable systemd-networkd systemd-resolved"
-    )?;
+    target_mount, 
+    "systemctl enable systemd-networkd systemd-resolved",
+    None
+)?;
 
     // Link /etc/resolv.conf to systemd-resolved's stub file
     let resolv_conf = target_mount.join("etc/resolv.conf");
