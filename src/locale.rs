@@ -3,6 +3,7 @@ use std::io::Write;
 use std::os::unix::fs::symlink;
 use std::path::Path;
 use std::process::Command;
+use crate::utils::run_chroot_command;
 
 /// Configures system locale and timezone in the target environment
 pub fn configure_locale(target_mount: &Path, locale: &str, timezone: &str) -> Result<(), String> {
@@ -36,7 +37,7 @@ pub fn configure_locale(target_mount: &Path, locale: &str, timezone: &str) -> Re
         .map_err(|e| format!("Failed to append to /etc/locale.gen: {}", e))?;
 
     // 4. Generate the locale binaries via chroot
-    run_chroot_command(target_mount, "locale-gen")?;
+    run_chroot_command(target_mount, "locale-gen", None)?;
 
     Ok(())
 }
