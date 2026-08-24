@@ -1,6 +1,8 @@
 use std::fs;
 use std::path::Path;
 use std::process::Command;
+use crate::utils::run_chroot_command;
+
 
 /// Generates /etc/fstab and /etc/hostname for the target installation
 pub fn configure_system(
