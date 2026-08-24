@@ -18,6 +18,8 @@ mod security;
 mod ui;
 mod users;
 mod verify;
+mod utils;
+
 
 use installer::InstallerPipeline;
 use std::path::Path;
