@@ -3,7 +3,12 @@ use std::process::Command;
 
 #[derive(Debug, Clone)]
 pub enum RootfsSource {
-    Archive(String),   // Path to tarball, e.g. "/run/media/rootfs.tar.xz"
+    Archive(String), // Path to tarball, e.g. "/run/media/rootfs.tar.xz"
+    // Reserved for a live-rootfs install mode (rsync from a mounted directory instead of
+    // extracting a tarball). No caller constructs this yet; the installer pipeline currently
+    // always builds an Archive source. Silences dead_code without deleting the variant/support
+    // code (sync_directory) since it looks like intended future functionality.
+    #[allow(dead_code)]
     Directory(String), // Path to live rootfs, e.g. "/run/rootfs"
 }
 

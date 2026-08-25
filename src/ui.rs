@@ -38,7 +38,7 @@ pub fn run_interactive_setup(ctx: &mut InstallationContext) -> Result<(), String
 
     ctx.target = Some(TargetDisk {
         device_path: selected_disk.path.clone(),
-        efi_partition: PathBuf::new(),  // Populated later by the pipeline
+        efi_partition: PathBuf::new(), // Populated later by the pipeline
         root_partition: PathBuf::new(), // Populated later by the pipeline
         mount_point: PathBuf::from(DEFAULT_TARGET_MOUNT),
     });

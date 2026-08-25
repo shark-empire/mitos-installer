@@ -3,8 +3,8 @@ use std::path::{Path, PathBuf};
 
 // Assuming all the modules we built are imported
 use crate::{
-    bootloader, config, filesystem, hardware, init, kernel, mount::MountGuard, partition,
-    platform, rootfs, security, users, verify,
+    bootloader, config, filesystem, hardware, init, kernel, locale, mount::MountGuard, network,
+    partition, platform, rootfs, security, users, verify,
 };
 
 #[derive(Debug, Clone, Default)]
@@ -118,7 +118,17 @@ impl InstallerPipeline {
             &self.ctx.sys_config.hostname,
         )?;
 
-        info!("Step 10: Creating user accounts...");
+        info!("Step 10: Configuring locale and timezone...");
+        locale::configure_locale(
+            &target.mount_point,
+            &self.ctx.sys_config.locale,
+            &self.ctx.sys_config.timezone,
+        )?;
+
+        info!("Step 11: Configuring networking...");
+        network::configure_network(&target.mount_point)?;
+
+        info!("Step 12: Creating user accounts...");
         users::configure_users(
             &target.mount_point,
             &self.ctx.sys_config.username,
@@ -126,7 +136,7 @@ impl InstallerPipeline {
             &self.ctx.sys_config.password_hash, // Using same for root for now
         )?;
 
-        info!("Step 11: Applying security policies..."); // <--- Added security step
+        info!("Step 13: Applying security policies..."); // <--- Added security step
         security::apply_security_policies(&target.mount_point)?;
 
         info!("Installation pipeline completed successfully!");
