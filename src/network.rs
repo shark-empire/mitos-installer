@@ -45,19 +45,4 @@ pub fn configure_network(target_mount: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// Helper function to execute commands inside the target environment
-fn run_chroot_command(target_mount: &Path, command: &str) -> Result<(), String> {
-    let status = Command::new("chroot")
-        .arg(target_mount.to_str().unwrap())
-        .arg("sh")
-        .arg("-c")
-        .arg(command)
-        .status()
-        .map_err(|e| format!("Failed to spawn chroot process: {}", e))?;
 
-    if !status.success() {
-        return Err(format!("Chroot command '{}' failed.", command));
-    }
-
-    Ok(())
-}
