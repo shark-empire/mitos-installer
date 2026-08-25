@@ -53,10 +53,12 @@ impl InstallerPipeline {
         // The UI must populate the target disk before calling execute()
         let target = self.ctx.target.as_mut().ok_or("Target disk not configured in context.")?;
 
-        // 2. Verification
+         // 2. Verification & Platform Checks
         info!("Step 1: Verifying system prerequisites...");
+        platform::detect_platform();            // <--- Added platform check
+        hardware::check_minimum_requirements()?; // <--- Added hardware check
         verify::check_prerequisites()?;
-        self.ctx.is_uefi = true; // If verify passes, we are definitely on UEFI
+        self.ctx.is_uefi = true; 
 
         // 3. Partitioning
         info!("Step 2: Partitioning disk {:?}...", target.device_path);
@@ -111,7 +113,8 @@ impl InstallerPipeline {
             &self.ctx.sys_config.password_hash // Using same for root for now
         )?;
 
-        // Note: You can add locale and network configuration modules here next
+         info!("Step 11: Applying security policies..."); // <--- Added security step
+        security::apply_security_policies(&target.mount_point)?;
 
         info!("Installation pipeline completed successfully!");
         
