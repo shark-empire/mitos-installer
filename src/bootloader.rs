@@ -18,9 +18,12 @@ pub fn install_limine(
     // This assumes the installer environment has BOOTX64.EFI available at /usr/share/limine/BOOTX64.EFI
     let limine_src = Path::new("/usr/share/limine/BOOTX64.EFI");
     let limine_dest = efi_boot_dir.join("BOOTX64.EFI");
-    
+
     if !limine_src.exists() {
-        return Err("Limine EFI binary not found in the live environment at /usr/share/limine/BOOTX64.EFI".to_string());
+        return Err(
+            "Limine EFI binary not found in the live environment at /usr/share/limine/BOOTX64.EFI"
+                .to_string(),
+        );
     }
 
     fs::copy(limine_src, &limine_dest)
@@ -51,7 +54,13 @@ pub fn install_limine(
 /// Helper function to retrieve the PARTUUID of a given partition using `blkid`
 fn get_partuuid(partition_path: &Path) -> Result<String, String> {
     let output = Command::new("blkid")
-        .args(["-s", "PARTUUID", "-o", "value", partition_path.to_str().unwrap()])
+        .args([
+            "-s",
+            "PARTUUID",
+            "-o",
+            "value",
+            partition_path.to_str().unwrap(),
+        ])
         .output()
         .map_err(|e| format!("Failed to execute blkid: {}", e))?;
 
@@ -65,7 +74,10 @@ fn get_partuuid(partition_path: &Path) -> Result<String, String> {
 
     let uuid = String::from_utf8_lossy(&output.stdout).trim().to_string();
     if uuid.is_empty() {
-        return Err(format!("blkid returned empty PARTUUID for {:?}", partition_path));
+        return Err(format!(
+            "blkid returned empty PARTUUID for {:?}",
+            partition_path
+        ));
     }
 
     Ok(uuid)

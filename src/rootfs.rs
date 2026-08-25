@@ -3,7 +3,7 @@ use std::process::Command;
 
 #[derive(Debug, Clone)]
 pub enum RootfsSource {
-    Archive(String), // Path to tarball, e.g. "/run/media/rootfs.tar.xz"
+    Archive(String),   // Path to tarball, e.g. "/run/media/rootfs.tar.xz"
     Directory(String), // Path to live rootfs, e.g. "/run/rootfs"
 }
 
@@ -19,13 +19,7 @@ fn extract_tarball(tar_path: &str, target_dir: &Path) -> Result<(), String> {
     let target_str = target_dir.to_str().ok_or("Invalid target directory path")?;
 
     let output = Command::new("tar")
-        .args([
-            "-xpf",
-            tar_path,
-            "-C",
-            target_str,
-            "--numeric-owner",
-        ])
+        .args(["-xpf", tar_path, "-C", target_str, "--numeric-owner"])
         .output()
         .map_err(|e| format!("Failed to execute tar extraction: {}", e))?;
 

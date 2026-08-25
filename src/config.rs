@@ -27,8 +27,7 @@ fn write_fstab(target_mount: &Path, root_part: &Path, efi_part: &Path) -> Result
     );
 
     let etc_dir = target_mount.join("etc");
-    fs::create_dir_all(&etc_dir)
-        .map_err(|e| format!("Failed to create /etc directory: {}", e))?;
+    fs::create_dir_all(&etc_dir).map_err(|e| format!("Failed to create /etc directory: {}", e))?;
 
     let fstab_path = etc_dir.join("fstab");
     fs::write(&fstab_path, fstab_content)
@@ -47,7 +46,13 @@ fn write_hostname(target_mount: &Path, hostname: &str) -> Result<(), String> {
 /// Helper function to retrieve the UUID of a given partition using `blkid`
 fn get_uuid(partition_path: &Path) -> Result<String, String> {
     let output = Command::new("blkid")
-        .args(["-s", "UUID", "-o", "value", partition_path.to_str().unwrap()])
+        .args([
+            "-s",
+            "UUID",
+            "-o",
+            "value",
+            partition_path.to_str().unwrap(),
+        ])
         .output()
         .map_err(|e| format!("Failed to execute blkid: {}", e))?;
 
@@ -61,7 +66,10 @@ fn get_uuid(partition_path: &Path) -> Result<String, String> {
 
     let uuid = String::from_utf8_lossy(&output.stdout).trim().to_string();
     if uuid.is_empty() {
-        return Err(format!("blkid returned empty UUID for {:?}", partition_path));
+        return Err(format!(
+            "blkid returned empty UUID for {:?}",
+            partition_path
+        ));
     }
 
     Ok(uuid)

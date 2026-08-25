@@ -33,7 +33,7 @@ fn wipe_partition_table(disk_path: &Path) -> Result<(), String> {
     if !status.success() {
         return Err(format!("Failed to wipe partition table on {:?}", disk_path));
     }
-    
+
     Ok(())
 }
 
@@ -44,9 +44,17 @@ fn create_gpt_layout(disk_path: &Path) -> Result<(), String> {
         // Clear all partition data in memory before writing
         .arg("--clear")
         // Partition 1: EFI System Partition (512MB, type ef00)
-        .args(["--new=1:0:+512M", "--typecode=1:ef00", "--change-name=1:MITOS_EFI"])
+        .args([
+            "--new=1:0:+512M",
+            "--typecode=1:ef00",
+            "--change-name=1:MITOS_EFI",
+        ])
         // Partition 2: Root Filesystem (Remaining space, type 8300)
-        .args(["--new=2:0:0", "--typecode=2:8300", "--change-name=2:MITOS_ROOT"])
+        .args([
+            "--new=2:0:0",
+            "--typecode=2:8300",
+            "--change-name=2:MITOS_ROOT",
+        ])
         .arg(disk_str)
         .status()
         .map_err(|e| format!("Failed to execute sgdisk partitioning: {}", e))?;
@@ -61,15 +69,16 @@ fn create_gpt_layout(disk_path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// Automatically handles standard block naming (sda -> sda1) 
+/// Automatically handles standard block naming (sda -> sda1)
 /// and NVMe/MMC block naming (nvme0n1 -> nvme0n1p1)
 fn get_partition_path(disk: &Path, part_num: u8) -> PathBuf {
     let path_str = disk.to_string_lossy();
-    let suffix = if path_str.contains("nvme") || path_str.contains("mmc") || path_str.contains("loop") {
-        format!("p{}", part_num)
-    } else {
-        format!("{}", part_num)
-    };
-    
+    let suffix =
+        if path_str.contains("nvme") || path_str.contains("mmc") || path_str.contains("loop") {
+            format!("p{}", part_num)
+        } else {
+            format!("{}", part_num)
+        };
+
     PathBuf::from(format!("{}{}", path_str, suffix))
 }

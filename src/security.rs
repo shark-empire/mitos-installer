@@ -1,9 +1,8 @@
-use std::path::Path;
 use crate::utils::run_chroot_command;
+use std::path::Path;
 
 /// Applies standard Linux security permissions to the target rootfs
 pub fn apply_security_policies(target_mount: &Path) -> Result<(), String> {
-    
     // Lock down the shadow file (contains password hashes)
     run_chroot_command(target_mount, "chmod 600 /etc/shadow", None)?;
     run_chroot_command(target_mount, "chown root:root /etc/shadow", None)?;

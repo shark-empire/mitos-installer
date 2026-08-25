@@ -4,7 +4,7 @@ use std::path::Path;
 pub fn check_prerequisites() -> Result<(), String> {
     check_root_privileges()?;
     check_uefi_mode()?;
-    
+
     // Additional checks like minimum RAM or CPU architecture can be added here
     Ok(())
 }
@@ -22,7 +22,9 @@ fn check_uefi_mode() -> Result<(), String> {
     // The presence of this directory guarantees the system was booted via UEFI
     let efi_dir = Path::new("/sys/firmware/efi");
     if !efi_dir.exists() {
-        return Err("System was not booted in UEFI mode. Legacy BIOS is not supported.".to_string());
+        return Err(
+            "System was not booted in UEFI mode. Legacy BIOS is not supported.".to_string(),
+        );
     }
     Ok(())
 }

@@ -1,13 +1,11 @@
+use crate::utils::run_chroot_command;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::os::unix::fs::symlink;
 use std::path::Path;
-use std::process::Command;
-use crate::utils::run_chroot_command;
 
 /// Configures system locale and timezone in the target environment
 pub fn configure_locale(target_mount: &Path, locale: &str, timezone: &str) -> Result<(), String> {
-    
     // 1. Configure Timezone
     let localtime_path = target_mount.join("etc/localtime");
     if localtime_path.exists() || localtime_path.is_symlink() {
@@ -41,4 +39,3 @@ pub fn configure_locale(target_mount: &Path, locale: &str, timezone: &str) -> Re
 
     Ok(())
 }
-

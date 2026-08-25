@@ -17,11 +17,9 @@ mod rootfs;
 mod security;
 mod ui;
 mod users;
-mod verify;
 mod utils;
+mod verify;
 
-
-use installer::InstallerPipeline;
 use std::path::Path;
 
 fn main() {
@@ -37,16 +35,19 @@ fn main() {
     println!("\nCommencing installation...");
     if let Err(err) = pipeline.execute() {
         eprintln!("\nInstallation failed: {}", err);
-        
+
         // Extract the target disk path if it was successfully selected during setup
-        let disk_path = pipeline.ctx.target.as_ref().map(|t| t.device_path.as_path());
+        let disk_path = pipeline
+            .ctx
+            .target
+            .as_ref()
+            .map(|t| t.device_path.as_path());
         let mount_point = Path::new(mount::DEFAULT_TARGET_MOUNT);
-        
+
         recovery::trigger_emergency_cleanup(mount_point, disk_path);
-        
+
         std::process::exit(1);
     }
 
     println!("\nMITOS installed successfully! You may now reboot.");
 }
-

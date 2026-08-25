@@ -28,12 +28,18 @@ impl MountGuard {
 
         // 2. Mount root filesystem
         let root_status = Command::new("mount")
-            .args([root_part.to_str().unwrap(), self.target_dir.to_str().unwrap()])
+            .args([
+                root_part.to_str().unwrap(),
+                self.target_dir.to_str().unwrap(),
+            ])
             .status()
             .map_err(|e| format!("Failed to execute mount command for root: {}", e))?;
 
         if !root_status.success() {
-            return Err(format!("Failed to mount {:?} to {:?}", root_part, self.target_dir));
+            return Err(format!(
+                "Failed to mount {:?} to {:?}",
+                root_part, self.target_dir
+            ));
         }
         self.root_mounted = true;
 
@@ -60,12 +66,16 @@ impl MountGuard {
     pub fn unmount_all(&mut self) -> Result<(), String> {
         if self.efi_mounted {
             let efi_dir = self.target_dir.join("boot/efi");
-            let _ = Command::new("umount").args(["-R", efi_dir.to_str().unwrap()]).status();
+            let _ = Command::new("umount")
+                .args(["-R", efi_dir.to_str().unwrap()])
+                .status();
             self.efi_mounted = false;
         }
 
         if self.root_mounted {
-            let _ = Command::new("umount").args(["-R", self.target_dir.to_str().unwrap()]).status();
+            let _ = Command::new("umount")
+                .args(["-R", self.target_dir.to_str().unwrap()])
+                .status();
             self.root_mounted = false;
         }
 

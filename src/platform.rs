@@ -1,5 +1,5 @@
-use std::fs;
 use log::info;
+use std::fs;
 
 /// Detects specific platform characteristics like virtualization
 pub fn detect_platform() {
@@ -18,7 +18,7 @@ fn is_virtual_machine() -> bool {
             return true;
         }
     }
-    
+
     // Fallback: check CPU info for hypervisor flag
     if let Ok(cpuinfo) = fs::read_to_string("/proc/cpuinfo") {
         if cpuinfo.contains("hypervisor") {

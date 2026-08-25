@@ -2,7 +2,7 @@ use dialoguer::{theme::ColorfulTheme, Confirm, Input, Password, Select};
 use std::path::PathBuf;
 
 use crate::disk::get_available_disks;
-use crate::installer::{InstallationContext, SystemConfig, TargetDisk};
+use crate::installer::{InstallationContext, TargetDisk};
 use crate::mount::DEFAULT_TARGET_MOUNT;
 
 pub fn run_interactive_setup(ctx: &mut InstallationContext) -> Result<(), String> {
@@ -45,7 +45,7 @@ pub fn run_interactive_setup(ctx: &mut InstallationContext) -> Result<(), String
 
     // 2. System Configuration
     println!("\n--- System Configuration ---");
-    
+
     ctx.sys_config.hostname = Input::with_theme(&theme)
         .with_prompt("System Hostname")
         .default("mitos".to_string())
@@ -80,8 +80,11 @@ pub fn run_interactive_setup(ctx: &mut InstallationContext) -> Result<(), String
         .map_err(|e| e.to_string())?;
 
     // 4. Final Confirmation
-    println!("\nWARNING: All data on {} will be irrevocably destroyed.", selected_disk.path.display());
-    
+    println!(
+        "\nWARNING: All data on {} will be irrevocably destroyed.",
+        selected_disk.path.display()
+    );
+
     let proceed = Confirm::with_theme(&theme)
         .with_prompt("Are you absolutely sure you want to proceed?")
         .default(false)
