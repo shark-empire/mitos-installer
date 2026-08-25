@@ -84,11 +84,11 @@ impl InstallerPipeline {
         let kernel_image = Path::new("/run/mitos-live/bzImage");
 
         info!("Step 5: Unpacking root filesystem...");
-        rootfs::unpack_rootfs(rootfs_archive, &target.mount_point)?;
+       rootfs::deploy_rootfs(&config.rootfs_source, &target_mount)?;
 
         info!("Step 6: Deploying MITOS kernel...");
         let efi_mount = target.mount_point.join("boot/efi");
-        kernel::deploy_kernel(kernel_image, &efi_mount, "bzImage")?;
+        kernel::install_kernel_binaries(&config.kernel_artifacts, &target_mount)?;
 
         // 7. System Configuration
         info!("Step 7: Configuring init system...");
