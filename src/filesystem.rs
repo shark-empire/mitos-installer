@@ -36,3 +36,29 @@ pub fn format_root_partition(partition_path: &Path) -> Result<(), String> {
 
     Ok(())
 }
+
+// Add this to filesystem.rs
+pub fn create_btrfs_layout(root_partition: &Path) -> Result<(), String> {
+    // 1. Format as Btrfs
+    Command::new("mkfs.btrfs").arg("-f").arg(root_partition).status()
+        .map_err(|e| e.to_string())?;
+
+    // 2. Temporary mount to create subvolumes
+    let temp_mount = Path::new("/mnt/mitos-temp");
+    std::fs::create_dir_all(temp_mount).unwrap();
+    Command::new("mount").arg(root_partition).arg(temp_mount).status().unwrap();
+
+    // 3. Create standard subvolumes
+    for sv in ["@", "@home", "@var", "@snapshots", "@log"] {
+        let sv_path = temp_mount.join(sv);
+        Command::new("btrfs")
+            .args(["subvolume", "create", sv_path.to_str().unwrap()])
+            .status()
+            .map_err(|e| format!("Failed to create {}: {}", sv, e))?;
+    }
+
+    // 4. Unmount temp
+    Command::new("umount").arg(temp_mount).status().unwrap();
+    Ok(())
+}
+
