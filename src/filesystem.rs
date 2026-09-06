@@ -1,5 +1,6 @@
 use std::path::Path;
 use std::process::Command;
+use crate::config::FilesystemType;
 
 /// Formats the EFI system partition as FAT32 with label "BOOT"
 pub fn format_efi_partition(partition_path: &Path) -> Result<(), String> {
@@ -19,23 +20,29 @@ pub fn format_efi_partition(partition_path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// Formats the root partition as EXT4 with label "MITOS_ROOT"
-pub fn format_root_partition(partition_path: &Path) -> Result<(), String> {
-    let output = Command::new("mkfs.ext4")
-        .args(["-F", "-L", "MITOS_ROOT", partition_path.to_str().unwrap()])
-        .output()
-        .map_err(|e| format!("Failed to execute mkfs.ext4: {}", e))?;
 
-    if !output.status.success() {
-        return Err(format!(
-            "Failed to format root partition {:?}: {}",
-            partition_path,
-            String::from_utf8_lossy(&output.stderr)
-        ));
+
+pub fn format_root_partition(partition: &Path, fs_type: FilesystemType) -> Result<(), String> {
+    let status = match fs_type {
+        FilesystemType::Ext4 => {
+            Command::new("mkfs.ext4")
+                .args(["-F", partition.to_str().unwrap()])
+                .status()
+        }
+        FilesystemType::Btrfs => {
+            Command::new("mkfs.btrfs")
+                .args(["-f", partition.to_str().unwrap()])
+                .status()
+        }
+    };
+
+    let status = status.map_err(|e| format!("Failed to format root partition: {}", e))?;
+    if !status.success() {
+        return Err("mkfs command failed".to_string());
     }
-
     Ok(())
 }
+
 
 // Add this to filesystem.rs
 pub fn create_btrfs_layout(root_partition: &Path) -> Result<(), String> {
