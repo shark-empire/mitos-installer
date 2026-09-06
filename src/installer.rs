@@ -141,6 +141,9 @@ impl InstallerPipeline {
 
         info!("Installation pipeline completed successfully!");
 
+        // In installer.rs, right before returning Ok(())
+        std::fs::write(target.mount_point.join("etc/.mitos-needs-setup"), "1")?;
+
         // mount_guard goes out of scope here and automatically safely unmounts everything
         Ok(())
     }
