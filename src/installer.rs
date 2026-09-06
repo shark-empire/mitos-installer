@@ -134,8 +134,11 @@ impl InstallerPipeline {
         info!("Step 8: Configuring init system...");
         init::configure_init(&target.mount_point, "/usr/lib/systemd/systemd")?;
 
-        info!("Step 9: Installing Limine bootloader...");
-        bootloader::install_limine(&efi_mount, &target.root_partition, "bzImage")?;
+      // In installer.rs (Step 9)
+info!("Step 9: Installing Limine bootloader...");
+// Pass "initramfs-mitos.img" (or whatever dracut named it)
+bootloader::install_limine(&efi_mount, &target.root_partition, "bzImage", "initramfs-mitos.img")?;
+
 
         // Dual-Boot Detection (WIRED: Adds Windows to Limine if found)
         let limine_conf = efi_mount.join("EFI/BOOT/limine.conf");
