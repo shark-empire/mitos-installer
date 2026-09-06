@@ -13,7 +13,7 @@ pub fn configure_users(
     let root_credentials = format!("root:{}", root_pass);
 
     // We pass the credentials via stdin (the 3rd argument) to keep passwords out of ps/logs
-    run_chroot_command(target_mount, "chpasswd", Some(&root_credentials))
+    run_chroot_command(target_mount, "chpasswd -e", Some(&root_credentials))
         .map_err(|e| format!("Failed to set root password: {}", e))?;
 
     info!("Creating user '{}'...", username);
@@ -24,7 +24,7 @@ pub fn configure_users(
 
     info!("Setting password for user '{}'...", username);
     let user_credentials = format!("{}:{}", username, user_pass);
-    run_chroot_command(target_mount, "chpasswd", Some(&user_credentials))
+    run_chroot_command(target_mount, "chpasswd -e", Some(&user_credentials))
         .map_err(|e| format!("Failed to set password for user '{}': {}", username, e))?;
 
     info!("Enabling sudo access for the 'wheel' group...");
