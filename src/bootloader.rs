@@ -82,3 +82,25 @@ fn get_partuuid(partition_path: &Path) -> Result<String, String> {
 
     Ok(uuid)
 }
+
+// In bootloader.rs
+pub fn detect_and_add_windows(efi_mount: &Path, limine_conf_path: &Path) -> Result<(), String> {
+    let windows_boot = efi_mount.join("EFI/Microsoft/Boot/bootmgfw.efi");
+    
+    if windows_boot.exists() {
+        info!("Windows detected! Adding to Limine...");
+        let windows_entry = r#"
+/Windows 11
+    protocol: efi_chainload
+    image_path: boot():/EFI/Microsoft/Boot/bootmgfw.efi
+"#;
+        // Append to limine.conf
+        std::fs::OpenOptions::new()
+            .append(true)
+            .open(limine_conf_path)
+            .and_then(|mut f| f.write_all(windows_entry.as_bytes()))
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
