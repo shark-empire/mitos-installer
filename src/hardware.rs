@@ -1,6 +1,5 @@
 use std::fs;
 
-
 // In hardware.rs
 #[derive(Default)]
 pub struct HardwareManifest {

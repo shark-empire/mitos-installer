@@ -23,15 +23,15 @@ pub fn configure_system(
     write_fstab(target_mount, root_partition, efi_partition, fs_type)?;
     write_hostname_and_hosts(target_mount, hostname)?;
     write_machine_id(target_mount)?;
-    
+
     Ok(())
 }
 
 fn write_fstab(
-    target_mount: &Path, 
-    root_part: &Path, 
-    efi_part: &Path, 
-    fs_type: FilesystemType
+    target_mount: &Path,
+    root_part: &Path,
+    efi_part: &Path,
+    fs_type: FilesystemType,
 ) -> Result<(), String> {
     let root_uuid = get_uuid(root_part)?;
     let efi_uuid = get_uuid(efi_part)?;
@@ -58,8 +58,8 @@ fn write_fstab(
         }
         FilesystemType::Btrfs => {
             let btrfs_opts = "compress=zstd:1,noatime,discard=async";
-            
-            // Note: Using 'subvol=@' without the leading slash is the most 
+
+            // Note: Using 'subvol=@' without the leading slash is the most
             // universally compatible syntax across different kernel versions.
             fstab.push_str(&format!(
                 "UUID={:<36}  /              btrfs   subvol=@,{}      0       0\n",
@@ -69,7 +69,7 @@ fn write_fstab(
                 "UUID={:<36}  /home          btrfs   subvol=@home,{}      0       0\n",
                 root_uuid, btrfs_opts
             ));
-            
+
             // CRITICAL FIX: Added /var subvolume to match mount.rs behavior
             fstab.push_str(&format!(
                 "UUID={:<36}  /var           btrfs   subvol=@var,{}      0       0\n",
@@ -86,8 +86,7 @@ fn write_fstab(
     fstab.push_str("tmpfs                                  /tmp           tmpfs   defaults,noatime,mode=1777  0       0\n");
 
     let fstab_path = target_mount.join("etc/fstab");
-    fs::write(&fstab_path, fstab)
-        .map_err(|e| format!("Failed to write /etc/fstab: {}", e))?;
+    fs::write(&fstab_path, fstab).map_err(|e| format!("Failed to write /etc/fstab: {}", e))?;
 
     Ok(())
 }
@@ -99,13 +98,13 @@ fn write_hostname_and_hosts(target_mount: &Path, hostname: &str) -> Result<(), S
         .chars()
         .filter(|c| c.is_ascii_alphanumeric() || *c == '-')
         .collect();
-        
+
     let clean_hostname = if clean_hostname.is_empty() {
         "mitos".to_string() // Fallback if user entered only invalid chars
     } else {
         clean_hostname
     };
-    
+
     // Write /etc/hostname
     let hostname_path = target_mount.join("etc/hostname");
     fs::write(&hostname_path, format!("{}\n", clean_hostname))
@@ -129,7 +128,7 @@ fn write_hostname_and_hosts(target_mount: &Path, hostname: &str) -> Result<(), S
 }
 
 fn write_machine_id(target_mount: &Path) -> Result<(), String> {
-    // Read directly from the kernel's random UUID generator. 
+    // Read directly from the kernel's random UUID generator.
     // This avoids relying on the `uuidgen` binary being installed in the live environment.
     let machine_id = fs::read_to_string("/proc/sys/kernel/random/uuid")
         .map(|s| s.replace("-", "").trim().to_lowercase())
@@ -143,11 +142,11 @@ fn write_machine_id(target_mount: &Path) -> Result<(), String> {
     let dbus_dir = target_mount.join("var/lib/dbus");
     fs::create_dir_all(&dbus_dir).unwrap_or_default();
     let dbus_machine_id = dbus_dir.join("machine-id");
-    
+
     if dbus_machine_id.exists() || dbus_machine_id.is_symlink() {
         let _ = fs::remove_file(&dbus_machine_id);
     }
-    
+
     // Create relative symlink: ../../../etc/machine-id
     std::os::unix::fs::symlink("../../../etc/machine-id", &dbus_machine_id)
         .map_err(|e| format!("Failed to symlink dbus machine-id: {}", e))?;
@@ -157,10 +156,17 @@ fn write_machine_id(target_mount: &Path) -> Result<(), String> {
 
 /// Helper function to retrieve the UUID of a given partition using `blkid`
 fn get_uuid(partition_path: &Path) -> Result<String, String> {
-    // Use -p to probe the device directly, bypassing potentially stale udev/blkid caches 
+    // Use -p to probe the device directly, bypassing potentially stale udev/blkid caches
     // immediately after partitioning.
     let output = Command::new("blkid")
-        .args(["-p", "-s", "UUID", "-o", "value", partition_path.to_str().unwrap()])
+        .args([
+            "-p",
+            "-s",
+            "UUID",
+            "-o",
+            "value",
+            partition_path.to_str().unwrap(),
+        ])
         .output()
         .map_err(|e| format!("Failed to execute blkid: {}", e))?;
 
@@ -174,7 +180,10 @@ fn get_uuid(partition_path: &Path) -> Result<String, String> {
 
     let uuid = String::from_utf8_lossy(&output.stdout).trim().to_string();
     if uuid.is_empty() {
-        return Err(format!("blkid returned empty UUID for {:?}", partition_path));
+        return Err(format!(
+            "blkid returned empty UUID for {:?}",
+            partition_path
+        ));
     }
 
     Ok(uuid)

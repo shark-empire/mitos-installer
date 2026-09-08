@@ -38,14 +38,14 @@ impl MountGuard {
         }
     }
 
-    /// Mounts the root partition (or LUKS mapper). 
+    /// Mounts the root partition (or LUKS mapper).
     /// Pass `is_btrfs = true` to apply modern Btrfs performance flags.
     pub fn mount_root(&mut self, root_part: &Path, is_btrfs: bool) -> Result<(), String> {
         fs::create_dir_all(&self.target_dir)
             .map_err(|e| format!("Failed to create directory {:?}: {}", self.target_dir, e))?;
 
         let mut cmd = Command::new("mount");
-        
+
         if is_btrfs {
             // Btrfs specific subvolume and compression flags
             cmd.args(["-o", "subvol=/@,compress=zstd:1,noatime,discard=async"]);
@@ -59,17 +59,27 @@ impl MountGuard {
             self.target_dir.to_str().unwrap(),
         ]);
 
-        let status = cmd.status().map_err(|e| format!("Failed to execute mount command for root: {}", e))?;
+        let status = cmd
+            .status()
+            .map_err(|e| format!("Failed to execute mount command for root: {}", e))?;
         if !status.success() {
-            return Err(format!("Failed to mount {:?} to {:?}", root_part, self.target_dir));
+            return Err(format!(
+                "Failed to mount {:?} to {:?}",
+                root_part, self.target_dir
+            ));
         }
-        
+
         self.mounts.push(MountPoint::Root(self.target_dir.clone()));
         Ok(())
     }
 
     /// Mounts Btrfs subvolumes like @home, @var, etc.
-    pub fn mount_btrfs_subvolume(&mut self, root_part: &Path, subvol_name: &str, target_subdir: &str) -> Result<(), String> {
+    pub fn mount_btrfs_subvolume(
+        &mut self,
+        root_part: &Path,
+        subvol_name: &str,
+        target_subdir: &str,
+    ) -> Result<(), String> {
         let target_path = self.target_dir.join(target_subdir);
         fs::create_dir_all(&target_path)
             .map_err(|e| format!("Failed to create subvolume dir {:?}: {}", target_path, e))?;
@@ -77,14 +87,22 @@ impl MountGuard {
         // Note: subvol=/@home is often safer than subvol=@home across different kernel versions
         let mount_opts = format!("subvol=/{}", subvol_name.trim_start_matches('/'));
         let full_opts = format!("{},compress=zstd:1,noatime,discard=async", mount_opts);
-        
+
         let status = Command::new("mount")
-            .args(["-o", &full_opts, root_part.to_str().unwrap(), target_path.to_str().unwrap()])
+            .args([
+                "-o",
+                &full_opts,
+                root_part.to_str().unwrap(),
+                target_path.to_str().unwrap(),
+            ])
             .status()
             .map_err(|e| format!("Failed to mount subvolume {}: {}", subvol_name, e))?;
 
         if !status.success() {
-            return Err(format!("Failed to mount subvolume {} to {:?}", subvol_name, target_path));
+            return Err(format!(
+                "Failed to mount subvolume {} to {:?}",
+                subvol_name, target_path
+            ));
         }
 
         self.mounts.push(MountPoint::Subvolume(target_path));
@@ -99,14 +117,19 @@ impl MountGuard {
 
         // umask=0077 ensures only root can read/write the EFI bootloader files (Security Hardening)
         let status = Command::new("mount")
-            .args(["-o", "umask=0077", efi_part.to_str().unwrap(), efi_dir.to_str().unwrap()])
+            .args([
+                "-o",
+                "umask=0077",
+                efi_part.to_str().unwrap(),
+                efi_dir.to_str().unwrap(),
+            ])
             .status()
             .map_err(|e| format!("Failed to execute mount command for EFI: {}", e))?;
 
         if !status.success() {
             return Err(format!("Failed to mount {:?} to {:?}", efi_part, efi_dir));
         }
-        
+
         self.mounts.push(MountPoint::Efi(efi_dir));
         Ok(())
     }
@@ -114,13 +137,13 @@ impl MountGuard {
     /// CRITICAL: Bind mounts pseudo-filesystems (/dev, /proc, /sys, /run).
     /// This is REQUIRED before running `chroot` commands.
     pub fn mount_pseudo_filesystems(&mut self) -> Result<(), String> {
-        // We use --rbind for /dev and /sys to ensure submounts like /dev/pts, /dev/shm, 
+        // We use --rbind for /dev and /sys to ensure submounts like /dev/pts, /dev/shm,
         // and /sys/firmware/efi/efivars are properly passed through to the chroot.
         let binds = [
-            ("/dev", "dev", true),   // rbind
+            ("/dev", "dev", true),    // rbind
             ("/proc", "proc", false), // bind
-            ("/sys", "sys", true),   // rbind
-            ("/run", "run", false),  // bind
+            ("/sys", "sys", true),    // rbind
+            ("/run", "run", false),   // bind
         ];
 
         for (source, target_rel, use_rbind) in binds.iter() {
@@ -135,23 +158,30 @@ impl MountGuard {
                 .map_err(|e| format!("Failed to bind mount {}: {}", source, e))?;
 
             if !status.success() {
-                return Err(format!("Failed to bind mount {} to {:?}", source, target_path));
+                return Err(format!(
+                    "Failed to bind mount {} to {:?}",
+                    source, target_path
+                ));
             }
-            
+
             self.mounts.push(MountPoint::Bind(target_path));
         }
 
-        // Even with --rbind /dev, some systems require explicit remounting or mounting 
-        // of /dev/pts and /dev/shm if they were separate mounts on the host that got 
+        // Even with --rbind /dev, some systems require explicit remounting or mounting
+        // of /dev/pts and /dev/shm if they were separate mounts on the host that got
         // shadowed. We explicitly ensure they are mounted just in case.
         let dev_pts = self.target_dir.join("dev/pts");
         fs::create_dir_all(&dev_pts).unwrap_or_default();
-        let _ = Command::new("mount").args(["--bind", "/dev/pts", dev_pts.to_str().unwrap()]).status();
+        let _ = Command::new("mount")
+            .args(["--bind", "/dev/pts", dev_pts.to_str().unwrap()])
+            .status();
         self.mounts.push(MountPoint::Bind(dev_pts));
 
         let dev_shm = self.target_dir.join("dev/shm");
         fs::create_dir_all(&dev_shm).unwrap_or_default();
-        let _ = Command::new("mount").args(["--bind", "/dev/shm", dev_shm.to_str().unwrap()]).status();
+        let _ = Command::new("mount")
+            .args(["--bind", "/dev/shm", dev_shm.to_str().unwrap()])
+            .status();
         self.mounts.push(MountPoint::Bind(dev_shm));
 
         Ok(())
@@ -167,8 +197,8 @@ impl MountGuard {
         // 2. Unmount in reverse order
         while let Some(mount_point) = self.mounts.pop() {
             let path = mount_point.path();
-            
-            // Use -R (recursive) and -l (lazy) to catch any lingering nested mounts 
+
+            // Use -R (recursive) and -l (lazy) to catch any lingering nested mounts
             // and force detachment if a background process is holding a file open.
             let _ = Command::new("umount")
                 .args(["-l", "-R", path.to_str().unwrap()])

@@ -60,8 +60,8 @@ impl InstallerPipeline {
 
         // 2. Verification & Platform Checks
         info!("Step 1: Verifying system prerequisites...");
-        platform::detect_platform(); 
-        hardware::check_minimum_requirements()?; 
+        platform::detect_platform();
+        hardware::check_minimum_requirements()?;
         verify::check_prerequisites()?;
         self.ctx.is_uefi = true;
 
@@ -75,9 +75,9 @@ impl InstallerPipeline {
         // 4. Formatting (WIRED: Btrfs Layout Creation)
         info!("Step 3: Formatting partitions...");
         filesystem::format_efi_partition(&target.efi_partition)?;
-        
+
         let is_btrfs = self.ctx.fs_type == config::FilesystemType::Btrfs;
-        
+
         if is_btrfs {
             info!("Creating Btrfs subvolume layout...");
             filesystem::create_btrfs_layout(&target.root_partition)?;
@@ -86,18 +86,21 @@ impl InstallerPipeline {
         }
 
         // 5. Mounting (WIRED: RAII Subvolumes & Pseudo-filesystems)
-        info!("Step 4: Mounting filesystems to {:?}...", target.mount_point);
+        info!(
+            "Step 4: Mounting filesystems to {:?}...",
+            target.mount_point
+        );
         let mut mount_guard = MountGuard::new(&target.mount_point);
-        
+
         mount_guard.mount_root(&target.root_partition, is_btrfs)?;
-        
+
         if is_btrfs {
             info!("Mounting Btrfs subvolumes...");
             mount_guard.mount_btrfs_subvolume(&target.root_partition, "@home", "home")?;
             mount_guard.mount_btrfs_subvolume(&target.root_partition, "@var", "var")?;
             mount_guard.mount_btrfs_subvolume(&target.root_partition, "@log", "var/log")?;
         }
-        
+
         mount_guard.mount_efi(&target.efi_partition)?;
 
         // 6. Payload Deployment
@@ -124,21 +127,21 @@ impl InstallerPipeline {
         // 7. Initramfs Generation (WIRED: Fixes Boot Failure)
         info!("Step 7: Generating initramfs via chroot...");
         // Note: If your base rootfs uses mkinitcpio instead of dracut, change this command!
-        utils::run_chroot_command(
-            &target.mount_point, 
-            "dracut --force", 
-            None
-        )?;
+        utils::run_chroot_command(&target.mount_point, "dracut --force", None)?;
 
         // 8. System Configuration
         info!("Step 8: Configuring init system...");
         init::configure_init(&target.mount_point, "/usr/lib/systemd/systemd")?;
 
-      // In installer.rs (Step 9)
-info!("Step 9: Installing Limine bootloader...");
-// Pass "initramfs-mitos.img" (or whatever dracut named it)
-bootloader::install_limine(&efi_mount, &target.root_partition, "bzImage", "initramfs-mitos.img")?;
-
+        // In installer.rs (Step 9)
+        info!("Step 9: Installing Limine bootloader...");
+        // Pass "initramfs-mitos.img" (or whatever dracut named it)
+        bootloader::install_limine(
+            &efi_mount,
+            &target.root_partition,
+            "bzImage",
+            "initramfs-mitos.img",
+        )?;
 
         // Dual-Boot Detection (WIRED: Adds Windows to Limine if found)
         let limine_conf = efi_mount.join("EFI/BOOT/limine.conf");
@@ -168,10 +171,10 @@ bootloader::install_limine(&efi_mount, &target.root_partition, "bzImage", "initr
             &target.mount_point,
             &self.ctx.sys_config.username,
             &self.ctx.sys_config.password_hash,
-            &self.ctx.sys_config.password_hash, 
+            &self.ctx.sys_config.password_hash,
         )?;
 
-        info!("Step 14: Applying security policies..."); 
+        info!("Step 14: Applying security policies...");
         security::apply_security_policies(&target.mount_point)?;
 
         // 9. Hardware Profiling (WIRED: Auto-enables drivers based on hardware)
@@ -179,11 +182,21 @@ bootloader::install_limine(&efi_mount, &target.root_partition, "bzImage", "initr
         let manifest = hardware::profile_hardware();
         if manifest.has_nvidia {
             info!("NVIDIA GPU detected. Enabling persistence daemon...");
-            utils::run_chroot_command(&target.mount_point, "systemctl enable nvidia-persistenced", None).ok();
+            utils::run_chroot_command(
+                &target.mount_point,
+                "systemctl enable nvidia-persistenced",
+                None,
+            )
+            .ok();
         }
         if manifest.is_laptop {
             info!("Laptop detected. Enabling power management...");
-            utils::run_chroot_command(&target.mount_point, "systemctl enable power-profiles-daemon", None).ok();
+            utils::run_chroot_command(
+                &target.mount_point,
+                "systemctl enable power-profiles-daemon",
+                None,
+            )
+            .ok();
             utils::run_chroot_command(&target.mount_point, "systemctl enable upower", None).ok();
         }
 

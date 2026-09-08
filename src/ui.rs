@@ -43,51 +43,39 @@ pub fn run_interactive_setup(ctx: &mut InstallationContext) -> Result<(), String
                 println!("You can go back at any stage to change your selections.\n");
                 stage = SetupStage::Network;
             }
-            SetupStage::Network => {
-                match configure_network_ui(&theme)? {
-                    NavAction::Next => stage = SetupStage::DiskSelection,
-                    NavAction::Back => stage = SetupStage::Welcome,
-                    NavAction::Cancel => return Err("Installation aborted.".to_string()),
-                }
-            }
-            SetupStage::DiskSelection => {
-                match select_disk(ctx, &theme)? {
-                    NavAction::Next => stage = SetupStage::PartitioningScheme,
-                    NavAction::Back => stage = SetupStage::Network,
-                    NavAction::Cancel => return Err("Installation aborted.".to_string()),
-                }
-            }
-            SetupStage::PartitioningScheme => {
-                match select_partitioning_scheme(ctx, &theme)? {
-                    NavAction::Next => stage = SetupStage::UserConfig,
-                    NavAction::Back => stage = SetupStage::DiskSelection,
-                    NavAction::Cancel => return Err("Installation aborted.".to_string()),
-                }
-            }
-            SetupStage::UserConfig => {
-                match configure_user(ctx, &theme)? {
-                    NavAction::Next => stage = SetupStage::Regional,
-                    NavAction::Back => stage = SetupStage::PartitioningScheme,
-                    NavAction::Cancel => return Err("Installation aborted.".to_string()),
-                }
-            }
-            SetupStage::Regional => {
-                match configure_regional(ctx, &theme)? {
-                    NavAction::Next => stage = SetupStage::Summary,
-                    NavAction::Back => stage = SetupStage::UserConfig,
-                    NavAction::Cancel => return Err("Installation aborted.".to_string()),
-                }
-            }
-            SetupStage::Summary => {
-                match show_summary_and_confirm(ctx, &theme)? {
-                    NavAction::Next => break,
-                    NavAction::Back => stage = SetupStage::Regional,
-                    NavAction::Cancel => return Err("Installation aborted.".to_string()),
-                }
-            }
+            SetupStage::Network => match configure_network_ui(&theme)? {
+                NavAction::Next => stage = SetupStage::DiskSelection,
+                NavAction::Back => stage = SetupStage::Welcome,
+                NavAction::Cancel => return Err("Installation aborted.".to_string()),
+            },
+            SetupStage::DiskSelection => match select_disk(ctx, &theme)? {
+                NavAction::Next => stage = SetupStage::PartitioningScheme,
+                NavAction::Back => stage = SetupStage::Network,
+                NavAction::Cancel => return Err("Installation aborted.".to_string()),
+            },
+            SetupStage::PartitioningScheme => match select_partitioning_scheme(ctx, &theme)? {
+                NavAction::Next => stage = SetupStage::UserConfig,
+                NavAction::Back => stage = SetupStage::DiskSelection,
+                NavAction::Cancel => return Err("Installation aborted.".to_string()),
+            },
+            SetupStage::UserConfig => match configure_user(ctx, &theme)? {
+                NavAction::Next => stage = SetupStage::Regional,
+                NavAction::Back => stage = SetupStage::PartitioningScheme,
+                NavAction::Cancel => return Err("Installation aborted.".to_string()),
+            },
+            SetupStage::Regional => match configure_regional(ctx, &theme)? {
+                NavAction::Next => stage = SetupStage::Summary,
+                NavAction::Back => stage = SetupStage::UserConfig,
+                NavAction::Cancel => return Err("Installation aborted.".to_string()),
+            },
+            SetupStage::Summary => match show_summary_and_confirm(ctx, &theme)? {
+                NavAction::Next => break,
+                NavAction::Back => stage = SetupStage::Regional,
+                NavAction::Cancel => return Err("Installation aborted.".to_string()),
+            },
         }
     }
-    
+
     Ok(())
 }
 
@@ -103,7 +91,7 @@ fn configure_network_ui(theme: &ColorfulTheme) -> Result<NavAction, String> {
         "Connect to Wi-Fi",
         "< Go Back",
     ];
-    
+
     let choice = Select::with_theme(theme)
         .with_prompt("Network Setup")
         .default(0)
@@ -210,7 +198,7 @@ fn select_disk(ctx: &mut InstallationContext, theme: &ColorfulTheme) -> Result<N
             format!("{} - {} ({} GB)", d.name, model, size_gb)
         })
         .collect();
-        
+
     disk_displays.push("< Go Back".to_string());
 
     let disk_idx = Select::with_theme(theme)
@@ -236,7 +224,10 @@ fn select_disk(ctx: &mut InstallationContext, theme: &ColorfulTheme) -> Result<N
     Ok(NavAction::Next)
 }
 
-fn select_partitioning_scheme(ctx: &mut InstallationContext, theme: &ColorfulTheme) -> Result<NavAction, String> {
+fn select_partitioning_scheme(
+    ctx: &mut InstallationContext,
+    theme: &ColorfulTheme,
+) -> Result<NavAction, String> {
     println!("\n--- Partitioning Scheme ---");
 
     let choices = vec![
@@ -265,7 +256,10 @@ fn select_partitioning_scheme(ctx: &mut InstallationContext, theme: &ColorfulThe
     }
 }
 
-fn configure_user(ctx: &mut InstallationContext, theme: &ColorfulTheme) -> Result<NavAction, String> {
+fn configure_user(
+    ctx: &mut InstallationContext,
+    theme: &ColorfulTheme,
+) -> Result<NavAction, String> {
     println!("\n--- System Configuration ---");
 
     // Hostname input with validation
@@ -273,7 +267,10 @@ fn configure_user(ctx: &mut InstallationContext, theme: &ColorfulTheme) -> Resul
         .with_prompt("System Hostname")
         .default("mitos".to_string())
         .validate_with(|input: &String| -> Result<(), String> {
-            let clean: String = input.chars().filter(|c| c.is_ascii_alphanumeric() || *c == '-').collect();
+            let clean: String = input
+                .chars()
+                .filter(|c| c.is_ascii_alphanumeric() || *c == '-')
+                .collect();
             if clean.is_empty() {
                 Err("Hostname must contain at least one alphanumeric character.".to_string())
             } else if clean.len() > 63 {
@@ -331,7 +328,10 @@ fn configure_user(ctx: &mut InstallationContext, theme: &ColorfulTheme) -> Resul
     Ok(NavAction::Next)
 }
 
-fn configure_regional(ctx: &mut InstallationContext, theme: &ColorfulTheme) -> Result<NavAction, String> {
+fn configure_regional(
+    ctx: &mut InstallationContext,
+    theme: &ColorfulTheme,
+) -> Result<NavAction, String> {
     println!("\n--- Regional Settings ---");
 
     // Provide common timezone selections instead of requiring exact string input
@@ -410,16 +410,22 @@ fn configure_regional(ctx: &mut InstallationContext, theme: &ColorfulTheme) -> R
     Ok(NavAction::Next)
 }
 
-fn show_summary_and_confirm(ctx: &InstallationContext, theme: &ColorfulTheme) -> Result<NavAction, String> {
+fn show_summary_and_confirm(
+    ctx: &InstallationContext,
+    theme: &ColorfulTheme,
+) -> Result<NavAction, String> {
     // Safe access: no .unwrap() that could panic
-    let target = ctx.target.as_ref().ok_or("Target disk was not configured.")?;
+    let target = ctx
+        .target
+        .as_ref()
+        .ok_or("Target disk was not configured.")?;
     let target_path = target.device_path.display();
-    
+
     let fs_label = match ctx.fs_type {
         FilesystemType::Ext4 => "Ext4",
         FilesystemType::Btrfs => "Btrfs (with subvolumes)",
     };
-    
+
     println!("\n========================================");
     println!("         Installation Summary           ");
     println!("========================================");
@@ -436,7 +442,11 @@ fn show_summary_and_confirm(ctx: &InstallationContext, theme: &ColorfulTheme) ->
         target_path
     );
 
-    let choices = vec!["Proceed with Installation", "Go Back and Edit", "Cancel Installation"];
+    let choices = vec![
+        "Proceed with Installation",
+        "Go Back and Edit",
+        "Cancel Installation",
+    ];
     let choice = Select::with_theme(theme)
         .with_prompt("Are you absolutely sure you want to proceed?")
         .default(0)
@@ -470,7 +480,9 @@ fn hash_password(password: &str) -> Result<String, String> {
         .map_err(|e| format!("Failed to hash password: {}", e))?;
 
     if !output.status.success() {
-        return Err("openssl passwd failed. Is openssl installed in the live environment?".to_string());
+        return Err(
+            "openssl passwd failed. Is openssl installed in the live environment?".to_string(),
+        );
     }
 
     let hash = String::from_utf8_lossy(&output.stdout).trim().to_string();

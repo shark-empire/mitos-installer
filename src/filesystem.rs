@@ -1,6 +1,6 @@
+use crate::config::FilesystemType;
 use std::path::Path;
 use std::process::Command;
-use crate::config::FilesystemType;
 
 /// Formats the EFI system partition as FAT32 with label "BOOT"
 pub fn format_efi_partition(partition_path: &Path) -> Result<(), String> {
@@ -20,20 +20,14 @@ pub fn format_efi_partition(partition_path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-
-
 pub fn format_root_partition(partition: &Path, fs_type: FilesystemType) -> Result<(), String> {
     let status = match fs_type {
-        FilesystemType::Ext4 => {
-            Command::new("mkfs.ext4")
-                .args(["-F", partition.to_str().unwrap()])
-                .status()
-        }
-        FilesystemType::Btrfs => {
-            Command::new("mkfs.btrfs")
-                .args(["-f", partition.to_str().unwrap()])
-                .status()
-        }
+        FilesystemType::Ext4 => Command::new("mkfs.ext4")
+            .args(["-F", partition.to_str().unwrap()])
+            .status(),
+        FilesystemType::Btrfs => Command::new("mkfs.btrfs")
+            .args(["-f", partition.to_str().unwrap()])
+            .status(),
     };
 
     let status = status.map_err(|e| format!("Failed to format root partition: {}", e))?;
@@ -43,17 +37,23 @@ pub fn format_root_partition(partition: &Path, fs_type: FilesystemType) -> Resul
     Ok(())
 }
 
-
 // Add this to filesystem.rs
 pub fn create_btrfs_layout(root_partition: &Path) -> Result<(), String> {
     // 1. Format as Btrfs
-    Command::new("mkfs.btrfs").arg("-f").arg(root_partition).status()
+    Command::new("mkfs.btrfs")
+        .arg("-f")
+        .arg(root_partition)
+        .status()
         .map_err(|e| e.to_string())?;
 
     // 2. Temporary mount to create subvolumes
     let temp_mount = Path::new("/mnt/mitos-temp");
     std::fs::create_dir_all(temp_mount).unwrap();
-    Command::new("mount").arg(root_partition).arg(temp_mount).status().unwrap();
+    Command::new("mount")
+        .arg(root_partition)
+        .arg(temp_mount)
+        .status()
+        .unwrap();
 
     // 3. Create standard subvolumes
     for sv in ["@", "@home", "@var", "@snapshots", "@log"] {
@@ -68,4 +68,3 @@ pub fn create_btrfs_layout(root_partition: &Path) -> Result<(), String> {
     Command::new("umount").arg(temp_mount).status().unwrap();
     Ok(())
 }
-
