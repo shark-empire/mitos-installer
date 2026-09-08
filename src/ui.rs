@@ -1,4 +1,3 @@
-
 use dialoguer::{theme::ColorfulTheme, Input, Password, Select};
 use std::path::PathBuf;
 use std::process::Command;
