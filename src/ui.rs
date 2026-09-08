@@ -158,7 +158,7 @@ fn attempt_wifi_connection(theme: &ColorfulTheme) -> Result<(), String> {
     }
 
     let ssid: String = networks[net_idx]
-        .splitn(2, ':')
+        .split(':')
         .next()
         .unwrap_or("")
         .to_string();
