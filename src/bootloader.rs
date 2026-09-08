@@ -37,10 +37,9 @@ pub fn install_limine(
         }
     }
     
-    let limine_src = limine_src.ok_or_else(|| 
+    let limine_src = limine_src.ok_or_else(||
         "Limine EFI binary not found in the live environment. Checked /usr/share/limine and /usr/lib/limine.".to_string()
     )?;
-
     let limine_dest = efi_mitos_dir.join("BOOTX64.EFI");
     let limine_fallback_dest = efi_fallback_dir.join("BOOTX64.EFI");
 
