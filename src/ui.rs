@@ -1,4 +1,5 @@
-use dialoguer::{theme::ColorfulTheme, Confirm, Input, Password, Select};
+#[allow(deadcode)]
+use dialoguer::{theme::ColorfulTheme, Confirm Input, Password, Select};
 use std::path::PathBuf;
 use std::process::Command;
 
