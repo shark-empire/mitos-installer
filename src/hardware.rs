@@ -1,4 +1,5 @@
 use std::fs;
+use std::process::Command;
 
 // In hardware.rs
 #[derive(Default)]
