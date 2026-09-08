@@ -1,4 +1,4 @@
-name: mitos-installer CI
+name: mitos-installer-CI
 
 on:
   push:
