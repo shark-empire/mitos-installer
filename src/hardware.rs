@@ -2,6 +2,7 @@ use std::fs;
 use std::process::Command;
 
 // In hardware.rs
+#[allow(dead_code)]
 #[derive(Default)]
 pub struct HardwareManifest {
     pub has_nvidia: bool,
