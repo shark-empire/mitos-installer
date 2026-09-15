@@ -15,4 +15,4 @@ libc = "0.2"
 nix = { version = "0.28", features = ["mount", "fs"] }
 log = "0.4"
 simplelog = "0.12"
-
+rust-i18n = "3.0"
