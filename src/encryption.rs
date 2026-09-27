@@ -154,7 +154,10 @@ pub fn luks_uuid(partition: &Path) -> Result<String, String> {
 
     let uuid = String::from_utf8_lossy(&output.stdout).trim().to_string();
     if uuid.is_empty() {
-        return Err(format!("cryptsetup luksUUID returned empty for {:?}", partition));
+        return Err(format!(
+            "cryptsetup luksUUID returned empty for {:?}",
+            partition
+        ));
     }
     Ok(uuid)
 }

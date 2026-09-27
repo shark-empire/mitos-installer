@@ -55,7 +55,10 @@ pub fn get_available_disks() -> Result<Vec<BlockDevice>, String> {
 /// results in `None` rather than a guess, so we never risk wrongly excluding a disk the
 /// person actually wants to install to.
 fn detect_live_boot_disk() -> Option<String> {
-    let output = Command::new("findmnt").args(["-no", "SOURCE", "/"]).output().ok()?;
+    let output = Command::new("findmnt")
+        .args(["-no", "SOURCE", "/"])
+        .output()
+        .ok()?;
     if !output.status.success() {
         return None;
     }
@@ -71,7 +74,9 @@ fn detect_live_boot_disk() -> Option<String> {
     if !pkname_output.status.success() {
         return None;
     }
-    let pkname = String::from_utf8_lossy(&pkname_output.stdout).trim().to_string();
+    let pkname = String::from_utf8_lossy(&pkname_output.stdout)
+        .trim()
+        .to_string();
 
     if pkname.is_empty() {
         // `source` may already be a whole-disk device (no separate partition), e.g. a live

@@ -3,8 +3,21 @@ use nix::unistd::Uid;
 
 /// Tools required for every installation, regardless of the chosen options.
 const CORE_TOOLS: &[&str] = &[
-    "sgdisk", "wipefs", "partprobe", "mkfs.vfat", "mkfs.ext4", "mount", "umount", "chroot",
-    "blkid", "useradd", "chpasswd", "openssl", "tar", "lsblk", "sed",
+    "sgdisk",
+    "wipefs",
+    "partprobe",
+    "mkfs.vfat",
+    "mkfs.ext4",
+    "mount",
+    "umount",
+    "chroot",
+    "blkid",
+    "useradd",
+    "chpasswd",
+    "openssl",
+    "tar",
+    "lsblk",
+    "sed",
 ];
 
 /// Options that affect which tools are actually needed, so we don't fail an installation

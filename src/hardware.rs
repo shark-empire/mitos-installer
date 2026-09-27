@@ -94,7 +94,10 @@ fn detect_ram_mib() -> u64 {
     };
     for line in meminfo.lines() {
         if let Some(rest) = line.strip_prefix("MemTotal:") {
-            if let Some(kb) = rest.split_whitespace().next().and_then(|s| s.parse::<u64>().ok())
+            if let Some(kb) = rest
+                .split_whitespace()
+                .next()
+                .and_then(|s| s.parse::<u64>().ok())
             {
                 return kb / 1024;
             }
@@ -161,7 +164,8 @@ fn detect_network_interfaces() -> Vec<NetworkInterfaceInfo> {
         }
 
         let iface_path = entry.path();
-        let is_wireless = iface_path.join("wireless").exists() || iface_path.join("phy80211").exists();
+        let is_wireless =
+            iface_path.join("wireless").exists() || iface_path.join("phy80211").exists();
         let is_up = fs::read_to_string(iface_path.join("operstate"))
             .map(|s| s.trim() == "up")
             .unwrap_or(false);

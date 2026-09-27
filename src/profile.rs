@@ -151,9 +151,11 @@ pub fn apply_desktop_choice(choice: DesktopChoice, target_mount: &Path) -> Resul
             DesktopChoice::Graphical => "enable",
             DesktopChoice::HeadlessServer => "disable",
         };
-        if let Err(e) =
-            run_chroot_command(target_mount, &format!("systemctl {} {}", action, unit), None)
-        {
+        if let Err(e) = run_chroot_command(
+            target_mount,
+            &format!("systemctl {} {}", action, unit),
+            None,
+        ) {
             warn!("Could not {} {}: {}", action, unit, e);
         }
     }

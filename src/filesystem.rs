@@ -62,14 +62,23 @@ pub fn create_btrfs_layout(root_partition: &Path) -> Result<(), String> {
 
     // 2. Temporary mount to create subvolumes
     let temp_mount = Path::new("/mnt/mitos-temp");
-    std::fs::create_dir_all(temp_mount)
-        .map_err(|e| format!("Failed to create temporary mount point {:?}: {}", temp_mount, e))?;
+    std::fs::create_dir_all(temp_mount).map_err(|e| {
+        format!(
+            "Failed to create temporary mount point {:?}: {}",
+            temp_mount, e
+        )
+    })?;
 
     let mount_status = Command::new("mount")
         .arg(root_partition)
         .arg(temp_mount)
         .status()
-        .map_err(|e| format!("Failed to mount {:?} for subvolume creation: {}", root_partition, e))?;
+        .map_err(|e| {
+            format!(
+                "Failed to mount {:?} for subvolume creation: {}",
+                root_partition, e
+            )
+        })?;
     if !mount_status.success() {
         return Err(format!(
             "Failed to temporarily mount {:?} at {:?} to create subvolumes",
@@ -93,7 +102,10 @@ pub fn create_btrfs_layout(root_partition: &Path) -> Result<(), String> {
                 break;
             }
             Err(e) => {
-                subvolume_result = Err(format!("Failed to run btrfs subvolume create for {}: {}", sv, e));
+                subvolume_result = Err(format!(
+                    "Failed to run btrfs subvolume create for {}: {}",
+                    sv, e
+                ));
                 break;
             }
         }

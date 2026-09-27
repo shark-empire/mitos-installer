@@ -54,8 +54,7 @@ pub fn configure_keyboard(target_mount: &Path, xkb_layout: &str) -> Result<(), S
         .map_err(|e| format!("Failed to write /etc/vconsole.conf: {}", e))?;
 
     let x11_dir = target_mount.join("etc/X11/xorg.conf.d");
-    fs::create_dir_all(&x11_dir)
-        .map_err(|e| format!("Failed to create {:?}: {}", x11_dir, e))?;
+    fs::create_dir_all(&x11_dir).map_err(|e| format!("Failed to create {:?}: {}", x11_dir, e))?;
 
     let x11_conf = format!(
         "Section \"InputClass\"\n\

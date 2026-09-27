@@ -8,8 +8,8 @@ use std::path::Path;
 /// defines them, so the desktop session has working audio/video/input/etc access without
 /// hardcoding assumptions about exactly which groups a given MITOS build ships.
 const DESIRABLE_SUPPLEMENTARY_GROUPS: &[&str] = &[
-    "wheel", "video", "audio", "input", "storage", "network", "disk", "plugdev", "lp",
-    "scanner", "render",
+    "wheel", "video", "audio", "input", "storage", "network", "disk", "plugdev", "lp", "scanner",
+    "render",
 ];
 
 pub fn configure_users(
@@ -41,7 +41,11 @@ pub fn configure_users(
     let useradd_cmd = if groups.is_empty() {
         format!("useradd -m -s /bin/bash {}", username)
     } else {
-        format!("useradd -m -s /bin/bash -G {} {}", groups.join(","), username)
+        format!(
+            "useradd -m -s /bin/bash -G {} {}",
+            groups.join(","),
+            username
+        )
     };
     run_chroot_command(target_mount, &useradd_cmd, None)
         .map_err(|e| format!("Failed to create user '{}': {}", username, e))?;

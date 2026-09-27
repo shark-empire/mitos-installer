@@ -234,7 +234,8 @@ impl ProgressReporter for IndicatifProgress {
         self.bar.finish_with_message(message.to_string());
     }
     fn fail(&mut self, message: &str) {
-        self.bar.abandon_with_message(format!("Failed: {}", message));
+        self.bar
+            .abandon_with_message(format!("Failed: {}", message));
     }
 }
 

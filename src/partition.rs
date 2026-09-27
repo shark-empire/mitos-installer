@@ -34,7 +34,14 @@ pub struct PartitionLayout {
 /// Returns the total size, in bytes, of the whole disk at `disk_path` (not a partition).
 pub fn disk_size_bytes(disk_path: &Path) -> Result<u64, String> {
     let output = Command::new("lsblk")
-        .args(["-b", "-d", "-n", "-o", "SIZE", disk_path.to_str().unwrap_or("")])
+        .args([
+            "-b",
+            "-d",
+            "-n",
+            "-o",
+            "SIZE",
+            disk_path.to_str().unwrap_or(""),
+        ])
         .output()
         .map_err(|e| format!("Failed to execute lsblk: {}", e))?;
 
@@ -89,8 +96,8 @@ pub fn validate_disk_capacity(disk_size_bytes: u64, opts: &PartitionOptions) -> 
 /// rootfs archive, so a marginal partition fails fast with a clear message instead of
 /// midway through a long extraction with a confusing "No space left on device" error.
 pub fn check_available_space(mount_point: &Path, needed_bytes: u64) -> Result<(), String> {
-    let stats = statvfs(mount_point)
-        .map_err(|e| format!("Failed to statvfs {:?}: {}", mount_point, e))?;
+    let stats =
+        statvfs(mount_point).map_err(|e| format!("Failed to statvfs {:?}: {}", mount_point, e))?;
 
     let available_bytes = stats.blocks_available() as u64 * stats.fragment_size() as u64;
     // 5% headroom for filesystem metadata/journal overhead beyond the raw payload size.
