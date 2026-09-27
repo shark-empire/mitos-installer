@@ -1,6 +1,12 @@
 use std::fs;
 use std::path::Path;
 
+/// MITOS's conventional kernel/initramfs filenames within /boot. Defined once here so the
+/// main install pipeline and recovery mode (which needs to find the *same* files again
+/// later, without re-generating a kernel) always agree on them.
+pub const DEFAULT_KERNEL_NAME: &str = "bzImage";
+pub const DEFAULT_INITRAMFS_NAME: &str = "initramfs-mitos.img";
+
 #[derive(Debug, Clone)]
 pub struct KernelArtifacts {
     pub kernel_path: String, // e.g., "/boot/vmlinuz-mitos" or freestanding ELF

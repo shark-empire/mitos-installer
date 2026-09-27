@@ -1,40 +1,60 @@
+use log::info;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
 
 /// Define supported filesystems so we can generate the correct mount options
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FilesystemType {
     Ext4,
     Btrfs,
 }
 
-/// Generates core system files: fstab, hostname, hosts, and machine-id
-pub fn configure_system(
-    target_mount: &Path,
-    root_partition: &Path,
-    efi_partition: &Path,
-    hostname: &str,
-    fs_type: FilesystemType,
-) -> Result<(), String> {
-    let etc_dir = target_mount.join("etc");
+/// crypttab metadata for an encrypted root, already resolved by the caller (installer.rs)
+/// via `encryption::luks_uuid`, so this module never has to re-derive the UUID itself and
+/// risk it disagreeing with the value baked into the kernel command line.
+pub struct LuksCrypttabInfo<'a> {
+    pub mapper_name: &'a str,
+    pub uuid: &'a str,
+}
+
+/// Everything needed to write out the target system's core config files. Grouped into a
+/// struct (rather than seven positional arguments) because several fields share the same
+/// `&Path` type, which makes positional argument-order mistakes an easy and dangerous
+/// mistake to make here - a swapped path could silently corrupt /etc/fstab.
+pub struct SystemConfigRequest<'a> {
+    pub target_mount: &'a Path,
+    /// The device that actually holds the root filesystem: the LUKS mapper when
+    /// encrypted, otherwise the raw root partition. This is what fstab's root UUID must
+    /// refer to.
+    pub root_fs_device: &'a Path,
+    pub efi_partition: &'a Path,
+    pub swap_partition: Option<&'a Path>,
+    pub luks: Option<LuksCrypttabInfo<'a>>,
+    pub hostname: &'a str,
+    pub fs_type: FilesystemType,
+}
+
+/// Generates core system files: fstab, crypttab (if encrypted), hostname, hosts,
+/// machine-id, and os-release.
+pub fn configure_system(req: &SystemConfigRequest) -> Result<(), String> {
+    let etc_dir = req.target_mount.join("etc");
     fs::create_dir_all(&etc_dir).map_err(|e| format!("Failed to create /etc directory: {}", e))?;
 
-    write_fstab(target_mount, root_partition, efi_partition, fs_type)?;
-    write_hostname_and_hosts(target_mount, hostname)?;
-    write_machine_id(target_mount)?;
+    write_fstab(req)?;
+    if req.luks.is_some() {
+        write_crypttab(req)?;
+    }
+    write_hostname_and_hosts(req.target_mount, req.hostname)?;
+    write_machine_id(req.target_mount)?;
+    write_os_release(req.target_mount)?;
 
     Ok(())
 }
 
-fn write_fstab(
-    target_mount: &Path,
-    root_part: &Path,
-    efi_part: &Path,
-    fs_type: FilesystemType,
-) -> Result<(), String> {
-    let root_uuid = get_uuid(root_part)?;
-    let efi_uuid = get_uuid(efi_part)?;
+fn write_fstab(req: &SystemConfigRequest) -> Result<(), String> {
+    let root_uuid = get_uuid(req.root_fs_device)?;
+    let efi_uuid = get_uuid(req.efi_partition)?;
 
     let mut fstab = String::from(
         "# /etc/fstab: static file system information.\n\
@@ -48,7 +68,7 @@ fn write_fstab(
     ));
 
     // 2. Root Partition (Dynamically formatted based on chosen Filesystem)
-    match fs_type {
+    match req.fs_type {
         FilesystemType::Ext4 => {
             // Added errors=remount-ro to prevent data corruption on disk errors
             fstab.push_str(&format!(
@@ -69,8 +89,6 @@ fn write_fstab(
                 "UUID={:<36}  /home          btrfs   subvol=@home,{}      0       0\n",
                 root_uuid, btrfs_opts
             ));
-
-            // CRITICAL FIX: Added /var subvolume to match mount.rs behavior
             fstab.push_str(&format!(
                 "UUID={:<36}  /var           btrfs   subvol=@var,{}      0       0\n",
                 root_uuid, btrfs_opts
@@ -82,13 +100,55 @@ fn write_fstab(
         }
     }
 
-    // 3. tmpfs for /tmp (Standard practice for performance and SSD longevity)
+    // 3. Swap, if requested
+    if let Some(swap_partition) = req.swap_partition {
+        let swap_uuid = get_uuid(swap_partition)?;
+        fstab.push_str(&format!(
+            "UUID={:<36}  none           swap    sw                          0       0\n",
+            swap_uuid
+        ));
+    }
+
+    // 4. tmpfs for /tmp (Standard practice for performance and SSD longevity)
     fstab.push_str("tmpfs                                  /tmp           tmpfs   defaults,noatime,mode=1777  0       0\n");
 
-    let fstab_path = target_mount.join("etc/fstab");
+    let fstab_path = req.target_mount.join("etc/fstab");
     fs::write(&fstab_path, fstab).map_err(|e| format!("Failed to write /etc/fstab: {}", e))?;
 
     Ok(())
+}
+
+/// Writes /etc/crypttab so the installed system's own tooling (systemd-cryptsetup,
+/// `systemctl status systemd-cryptsetup@...`) knows about the root volume. This is not
+/// what unlocks the root filesystem at boot - that's handled earlier, in the initramfs,
+/// via the `rd.luks.*` kernel command-line parameters written by `bootloader.rs` - but a
+/// correct crypttab entry is still standard practice and needed for anything on the
+/// booted system that inspects it.
+fn write_crypttab(req: &SystemConfigRequest) -> Result<(), String> {
+    let luks = req
+        .luks
+        .as_ref()
+        .expect("write_crypttab called without LUKS info");
+
+    let crypttab = format!(
+        "# <target name>  <source device>       <key file>  <options>\n\
+         {name}  UUID={uuid}  none  luks,discard\n",
+        name = luks.mapper_name,
+        uuid = luks.uuid
+    );
+
+    let crypttab_path = req.target_mount.join("etc/crypttab");
+    fs::write(&crypttab_path, crypttab)
+        .map_err(|e| format!("Failed to write /etc/crypttab: {}", e))?;
+
+    Ok(())
+}
+
+/// Public entry point for updating just the hostname (and /etc/hosts) on an already
+/// installed system, without touching fstab/machine-id/os-release. Used by recovery
+/// mode's "restore configuration" action.
+pub fn update_hostname(target_mount: &Path, hostname: &str) -> Result<(), String> {
+    write_hostname_and_hosts(target_mount, hostname)
 }
 
 fn write_hostname_and_hosts(target_mount: &Path, hostname: &str) -> Result<(), String> {
@@ -115,7 +175,7 @@ fn write_hostname_and_hosts(target_mount: &Path, hostname: &str) -> Result<(), S
         "# /etc/hosts\n\
          127.0.0.1       localhost\n\
          ::1             localhost ip6-localhost ip6-loopback\n\
-         ff02::1         I'll ip6-allnodes\n\
+         ff02::1         ip6-allnodes\n\
          ff02::2         ip6-allrouters\n\
          127.0.1.1       {0}.localdomain {0}\n",
         clean_hostname
@@ -150,6 +210,28 @@ fn write_machine_id(target_mount: &Path) -> Result<(), String> {
     // Create relative symlink: ../../../etc/machine-id
     std::os::unix::fs::symlink("../../../etc/machine-id", &dbus_machine_id)
         .map_err(|e| format!("Failed to symlink dbus machine-id: {}", e))?;
+
+    Ok(())
+}
+
+/// Ensures /etc/os-release identifies the system as MITOS. If the base rootfs already
+/// ships one (the common case - `mitos-pkg` and friends likely rely on it), we leave it
+/// untouched rather than risk clobbering version metadata we don't know about. We only
+/// write a minimal fallback when it's missing entirely, both for general standards
+/// compliance and so recovery mode can reliably recognize this installation later.
+fn write_os_release(target_mount: &Path) -> Result<(), String> {
+    let os_release_path = target_mount.join("etc/os-release");
+    if os_release_path.exists() {
+        return Ok(());
+    }
+
+    info!("No /etc/os-release found in the rootfs; writing a minimal fallback.");
+    let content = "NAME=\"MITOS\"\n\
+                    ID=mitos\n\
+                    PRETTY_NAME=\"MITOS Linux\"\n\
+                    HOME_URL=\"https://mitos.example\"\n";
+    fs::write(&os_release_path, content)
+        .map_err(|e| format!("Failed to write /etc/os-release: {}", e))?;
 
     Ok(())
 }
