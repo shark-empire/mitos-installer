@@ -1,5 +1,19 @@
 {
   "welcome": "Welcome to MITOS",
   "settings": "Settings",
-  "install_now": "Install MITOS"
+  "install_now": "Install MITOS",
+  "welcome_body": "This wizard will guide you through installing MITOS. You can go back at any stage to change your selections.",
+  "select_language": "Select installer language",
+  "network_heading": "Network Configuration",
+  "disk_heading": "Disk Selection",
+  "partitioning_heading": "Disk Layout",
+  "user_heading": "System Configuration",
+  "regional_heading": "Regional Settings",
+  "software_heading": "Software Selection",
+  "summary_heading": "Installation Summary",
+  "recovery_heading": "MITOS Recovery Mode",
+  "recovery_no_installs": "No existing MITOS installations were found on any disk.",
+  "go_back": "Go Back",
+  "cancel": "Cancel",
+  "proceed": "Proceed"
 }

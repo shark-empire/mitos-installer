@@ -1,5 +1,19 @@
 {
   "welcome": "Bienvenido a MITOS",
   "settings": "Ajustes",
-  "install_now": "Instalar MITOS"
+  "install_now": "Instalar MITOS",
+  "welcome_body": "Este asistente te guiará por la instalación de MITOS. Puedes retroceder en cualquier momento para cambiar tus selecciones.",
+  "select_language": "Selecciona el idioma del instalador",
+  "network_heading": "Configuración de red",
+  "disk_heading": "Selección de disco",
+  "partitioning_heading": "Distribución del disco",
+  "user_heading": "Configuración del sistema",
+  "regional_heading": "Configuración regional",
+  "software_heading": "Selección de software",
+  "summary_heading": "Resumen de la instalación",
+  "recovery_heading": "Modo de recuperación de MITOS",
+  "recovery_no_installs": "No se encontró ninguna instalación de MITOS existente en ningún disco.",
+  "go_back": "Atrás",
+  "cancel": "Cancelar",
+  "proceed": "Continuar"
 }
