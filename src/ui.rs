@@ -133,10 +133,7 @@ fn select_language(ctx: &mut InstallationContext, theme: &dyn Theme) -> Result<(
         return Ok(());
     }
 
-    let default_idx = locales
-        .iter()
-        .position(|l| l == &ctx.ui_language)
-        .unwrap_or(0);
+    let default_idx = locales.iter().position(|l| l == &ctx.ui_language).unwrap_or(0);
 
     let idx = Select::with_theme(theme)
         .with_prompt("Select installer language / Selecciona el idioma")
@@ -150,10 +147,7 @@ fn select_language(ctx: &mut InstallationContext, theme: &dyn Theme) -> Result<(
     Ok(())
 }
 
-fn configure_network_ui(
-    ctx: &mut InstallationContext,
-    theme: &dyn Theme,
-) -> Result<NavAction, String> {
+fn configure_network_ui(ctx: &mut InstallationContext, theme: &dyn Theme) -> Result<NavAction, String> {
     println!("\n--- {} ---", t!("network_heading"));
 
     let choices = vec![
@@ -355,11 +349,9 @@ fn configure_disk_layout(
                 .default(recommended_mib)
                 .validate_with(|input: &u64| -> Result<(), String> {
                     if *input == 0 {
-                        Err(
-                            "Swap size must be greater than 0. Choose 'No swap' instead if \
+                        Err("Swap size must be greater than 0. Choose 'No swap' instead if \
                              you don't want any."
-                                .to_string(),
-                        )
+                            .to_string())
                     } else {
                         Ok(())
                     }
@@ -482,10 +474,7 @@ fn configure_user(ctx: &mut InstallationContext, theme: &dyn Theme) -> Result<Na
     Ok(NavAction::Next)
 }
 
-fn configure_regional(
-    ctx: &mut InstallationContext,
-    theme: &dyn Theme,
-) -> Result<NavAction, String> {
+fn configure_regional(ctx: &mut InstallationContext, theme: &dyn Theme) -> Result<NavAction, String> {
     println!("\n--- {} ---", t!("regional_heading"));
 
     // Provide common timezone selections instead of requiring exact string input
@@ -595,16 +584,10 @@ fn configure_regional(
     Ok(NavAction::Next)
 }
 
-fn configure_software(
-    ctx: &mut InstallationContext,
-    theme: &dyn Theme,
-) -> Result<NavAction, String> {
+fn configure_software(ctx: &mut InstallationContext, theme: &dyn Theme) -> Result<NavAction, String> {
     println!("\n--- {} ---", t!("software_heading"));
 
-    let mut desktop_labels: Vec<&str> = profile::DesktopChoice::ALL
-        .iter()
-        .map(|d| d.label())
-        .collect();
+    let mut desktop_labels: Vec<&str> = profile::DesktopChoice::ALL.iter().map(|d| d.label()).collect();
     desktop_labels.push("< Go Back");
 
     let desktop_idx = Select::with_theme(theme)
@@ -619,10 +602,7 @@ fn configure_software(
     }
     ctx.desktop_choice = profile::DesktopChoice::ALL[desktop_idx];
 
-    let profile_labels: Vec<&str> = profile::InstallProfile::ALL
-        .iter()
-        .map(|p| p.label())
-        .collect();
+    let profile_labels: Vec<&str> = profile::InstallProfile::ALL.iter().map(|p| p.label()).collect();
     let profile_idx = Select::with_theme(theme)
         .with_prompt("Package selection")
         .default(1) // Standard
@@ -634,10 +614,7 @@ fn configure_software(
     Ok(NavAction::Next)
 }
 
-fn show_summary_and_confirm(
-    ctx: &InstallationContext,
-    theme: &dyn Theme,
-) -> Result<NavAction, String> {
+fn show_summary_and_confirm(ctx: &InstallationContext, theme: &dyn Theme) -> Result<NavAction, String> {
     // Safe access: no .unwrap() that could panic
     let target = ctx
         .target
@@ -724,10 +701,7 @@ fn show_summary_and_confirm(
             if typed.trim() == target_path {
                 Ok(NavAction::Next)
             } else {
-                println!(
-                    "\nThat didn't match {}. Returning to the summary.\n",
-                    target_path
-                );
+                println!("\nThat didn't match {}. Returning to the summary.\n", target_path);
                 Ok(NavAction::Back)
             }
         }
@@ -857,10 +831,7 @@ fn prompt_restore_config(
     theme: &dyn Theme,
     session: &recovery::RecoverySession,
 ) -> Result<recovery::RestoreConfigInput, String> {
-    let default_hostname = session
-        .hostname
-        .clone()
-        .unwrap_or_else(|| "mitos".to_string());
+    let default_hostname = session.hostname.clone().unwrap_or_else(|| "mitos".to_string());
 
     let hostname: String = Input::with_theme(theme)
         .with_prompt("Hostname")

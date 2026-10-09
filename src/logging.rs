@@ -95,11 +95,7 @@ impl TransactionLog {
             .and_then(|mut f| f.write_all(line.as_bytes()));
 
         if let Err(e) = result {
-            log::warn!(
-                "Failed to write transaction log entry to {:?}: {}",
-                self.path,
-                e
-            );
+            log::warn!("Failed to write transaction log entry to {:?}: {}", self.path, e);
         }
     }
 
