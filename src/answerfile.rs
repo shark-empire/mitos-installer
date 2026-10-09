@@ -3,7 +3,9 @@
 //! same `InstallationContext` the interactive UI builds - so both modes drive the exact
 //! same `InstallerPipeline::execute()`.
 
-use crate::installer::{EncryptionConfig, InstallationContext, SwapChoice, SystemConfig, TargetDisk};
+use crate::installer::{
+    EncryptionConfig, InstallationContext, SwapChoice, SystemConfig, TargetDisk,
+};
 use crate::{config, mount, profile, utils};
 use serde::Deserialize;
 use std::fs;
@@ -270,7 +272,10 @@ fn parse_install_profile(value: &str) -> Result<profile::InstallProfile, AnswerF
         "creator" => Ok(profile::InstallProfile::Creator),
         other => Err(AnswerFileError::InvalidValue {
             field: "install_profile".to_string(),
-            reason: format!("'{}' is not one of: minimal, standard, gaming, creator", other),
+            reason: format!(
+                "'{}' is not one of: minimal, standard, gaming, creator",
+                other
+            ),
         }),
     }
 }

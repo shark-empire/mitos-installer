@@ -85,7 +85,9 @@ pub fn trigger_emergency_cleanup(
             Err(e) => error!("Failed to execute sgdisk for rollback: {}", e),
         }
 
-        let _ = Command::new("partprobe").arg(disk.to_str().unwrap()).status();
+        let _ = Command::new("partprobe")
+            .arg(disk.to_str().unwrap())
+            .status();
     }
 
     warn!("Emergency rollback completed. System is safe to restart the installer.");
@@ -125,8 +127,8 @@ fn scan_block_devices() -> Result<Vec<LsblkNode>, String> {
     }
 
     let json_str = String::from_utf8_lossy(&output.stdout);
-    let parsed: LsblkTree =
-        serde_json::from_str(&json_str).map_err(|e| format!("Failed to parse lsblk JSON: {}", e))?;
+    let parsed: LsblkTree = serde_json::from_str(&json_str)
+        .map_err(|e| format!("Failed to parse lsblk JSON: {}", e))?;
 
     Ok(parsed.blockdevices)
 }
@@ -176,12 +178,16 @@ pub fn list_installation_candidates() -> Result<Vec<InstallationCandidate>, Stri
     let mut candidates = Vec::new();
 
     for disk in devices.iter().filter(|d| d.dev_type == "disk") {
-        let Some(disk_path) = &disk.path else { continue };
+        let Some(disk_path) = &disk.path else {
+            continue;
+        };
 
         let esp_partition = disk
             .children
             .iter()
-            .find(|c| matches_guid(c, EFI_SYSTEM_PARTITION_GUID) || c.fstype.as_deref() == Some("vfat"))
+            .find(|c| {
+                matches_guid(c, EFI_SYSTEM_PARTITION_GUID) || c.fstype.as_deref() == Some("vfat")
+            })
             .and_then(|c| c.path.clone());
 
         let bios_stage2_partition = disk
@@ -191,7 +197,9 @@ pub fn list_installation_candidates() -> Result<Vec<InstallationCandidate>, Stri
             .and_then(|c| c.path.clone());
 
         for part in &disk.children {
-            let Some(part_path) = &part.path else { continue };
+            let Some(part_path) = &part.path else {
+                continue;
+            };
             let fstype = part.fstype.clone().unwrap_or_default();
 
             let is_luks = fstype == "crypto_LUKS";
@@ -243,7 +251,12 @@ fn probe_root_candidate(partition: &Path) -> (Option<String>, bool) {
     }
 
     let mount_status = Command::new("mount")
-        .args(["-o", "ro", partition.to_str().unwrap_or(""), probe_dir.to_str().unwrap()])
+        .args([
+            "-o",
+            "ro",
+            partition.to_str().unwrap_or(""),
+            probe_dir.to_str().unwrap(),
+        ])
         .status();
 
     let Ok(status) = mount_status else {
@@ -273,11 +286,21 @@ fn probe_root_candidate(partition: &Path) -> (Option<String>, bool) {
 
 fn detect_fstype(partition: &Path) -> Result<String, String> {
     let output = Command::new("blkid")
-        .args(["-p", "-s", "TYPE", "-o", "value", partition.to_str().unwrap()])
+        .args([
+            "-p",
+            "-s",
+            "TYPE",
+            "-o",
+            "value",
+            partition.to_str().unwrap(),
+        ])
         .output()
         .map_err(|e| format!("Failed to execute blkid: {}", e))?;
     if !output.status.success() {
-        return Err(format!("Could not determine filesystem type of {:?}", partition));
+        return Err(format!(
+            "Could not determine filesystem type of {:?}",
+            partition
+        ));
     }
     Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
@@ -314,7 +337,11 @@ pub fn open_session(
     let effective_root: PathBuf = if candidate.is_luks {
         let passphrase = luks_passphrase
             .ok_or("This installation is encrypted; a passphrase is required to open it.")?;
-        encryption::open_luks(&candidate.root_partition, encryption::ROOT_MAPPER_NAME, passphrase)?;
+        encryption::open_luks(
+            &candidate.root_partition,
+            encryption::ROOT_MAPPER_NAME,
+            passphrase,
+        )?;
         encryption::mapper_path(encryption::ROOT_MAPPER_NAME)
     } else {
         candidate.root_partition.clone()
@@ -361,7 +388,10 @@ pub fn close_session(mut session: RecoverySession) {
     }
     if session.is_luks {
         if let Err(e) = encryption::close_luks(encryption::ROOT_MAPPER_NAME) {
-            warn!("Error while closing LUKS mapping after recovery session: {}", e);
+            warn!(
+                "Error while closing LUKS mapping after recovery session: {}",
+                e
+            );
         }
     }
 }
@@ -433,7 +463,10 @@ pub fn repair_boot(session: &RecoverySession, txn_log: &TransactionLog) -> Resul
 /// subcommands are a best effort (this repo doesn't ship `mitos-pkg`'s own docs) and
 /// degrade gracefully: if it's missing entirely, this reports that clearly instead of
 /// failing, since "reinstall system components" is the appropriate fallback in that case.
-pub fn repair_packages(session: &RecoverySession, txn_log: &TransactionLog) -> Result<String, String> {
+pub fn repair_packages(
+    session: &RecoverySession,
+    txn_log: &TransactionLog,
+) -> Result<String, String> {
     let target = session.target_mount();
     txn_log.record("recovery: repair_packages started");
 

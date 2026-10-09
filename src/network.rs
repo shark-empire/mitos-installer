@@ -34,8 +34,11 @@ pub fn configure_network(
     [Network]\n\
     DHCP=yes\n\
     ";
-    fs::write(network_dir.join("25-wireless.network"), wireless_network_content)
-        .map_err(|e| format!("Failed to write 25-wireless.network config: {}", e))?;
+    fs::write(
+        network_dir.join("25-wireless.network"),
+        wireless_network_content,
+    )
+    .map_err(|e| format!("Failed to write 25-wireless.network config: {}", e))?;
 
     // Enable systemd-networkd and systemd-resolved via chroot
     run_chroot_command(
@@ -97,8 +100,10 @@ fn carry_over_wifi_credentials(target_mount: &Path, ssid: &str, psk: &str) -> Re
 /// alphanumerics/'-'/'_', otherwise an '=' followed by the lowercase-hex-encoded SSID
 /// bytes. See `iwd.network(5)`.
 fn iwd_profile_filename(ssid: &str) -> String {
-    let is_simple_name =
-        !ssid.is_empty() && ssid.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_');
+    let is_simple_name = !ssid.is_empty()
+        && ssid
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_');
 
     if is_simple_name {
         format!("{}.psk", ssid)

@@ -139,8 +139,7 @@ pub fn install_limine_bios(req: &BootloaderRequest) -> Result<(), String> {
 /// exact same files.
 fn deploy_shared_boot_files(req: &BootloaderRequest) -> Result<(), String> {
     let boot_dir = req.esp_mount.join(LIMINE_BOOT_DIR);
-    fs::create_dir_all(&boot_dir)
-        .map_err(|e| format!("Failed to create {:?}: {}", boot_dir, e))?;
+    fs::create_dir_all(&boot_dir).map_err(|e| format!("Failed to create {:?}: {}", boot_dir, e))?;
 
     // kernel.rs installs the kernel/initramfs into the target rootfs's own /boot
     // directory first; from here (esp_mount = <target>/boot/efi) that's just "..".
@@ -192,7 +191,10 @@ fn deploy_shared_boot_files(req: &BootloaderRequest) -> Result<(), String> {
 
 /// Builds the `root=`/`rd.luks.*` portion of the kernel command line, branching on
 /// whether the root filesystem is encrypted.
-fn build_kernel_cmdline(raw_root_partition: &Path, luks: Option<&LuksBootInfo>) -> Result<String, String> {
+fn build_kernel_cmdline(
+    raw_root_partition: &Path,
+    luks: Option<&LuksBootInfo>,
+) -> Result<String, String> {
     match luks {
         Some(info) => Ok(format!(
             "root=/dev/mapper/{mapper} rw quiet splash rd.luks.uuid={uuid} \
@@ -243,9 +245,12 @@ fn partition_number(disk_path: &Path, partition_path: &Path) -> Result<u8, Strin
     let disk_str = disk_path.to_str().ok_or("Invalid disk path")?;
     let part_str = partition_path.to_str().ok_or("Invalid partition path")?;
 
-    let suffix = part_str
-        .strip_prefix(disk_str)
-        .ok_or_else(|| format!("{:?} does not look like a partition of {:?}", partition_path, disk_path))?;
+    let suffix = part_str.strip_prefix(disk_str).ok_or_else(|| {
+        format!(
+            "{:?} does not look like a partition of {:?}",
+            partition_path, disk_path
+        )
+    })?;
     let digits = suffix.trim_start_matches('p');
 
     digits.parse::<u8>().map_err(|_| {
